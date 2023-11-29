@@ -9,6 +9,10 @@ const limiter = rateLimit({
     max: 150, // limit each IP to 100 requests per windowMs
   });
 app.use("/", limiter);
+app.use((req, res, next) => {
+    req.url = req.url.replace(/\/{2,}/g, '/');
+    next();
+});
 app.use(cors({
     origin: '*',
     maxAge: 129600,//Approx 1 days 12 hours

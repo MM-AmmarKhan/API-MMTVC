@@ -4,6 +4,7 @@ exports.homepage = async (req, res) => {
   const token = req.body.token;
   const key = process.env.SECRET_CODE;
   let person_id = parseInt(token) - parseInt(key);
+  console.log(person_id)
   try {
     if (!person_id || person_id < 1) {
       return res.status(400).send({ message: "Invalid User" });
@@ -40,7 +41,7 @@ exports.homepage = async (req, res) => {
         JOIN phonebook.bdbrand ON phonebook.bdsubcategory.subcategoryID = phonebook.bdbrand.subcategoryID
         WHERE newsms_subscription.isActive = 1 AND phonebook.newsms_person.personID = ` + person_id + " ORDER BY phonebook.bdsubcategory.subcategoryName, phonebook.bdbrand.brandName ASC",
         { type: db.sequelize.QueryTypes.SELECT }
-      );      
+      );
       const subcategoryIDs = categories.map(item => item.subcategoryID);
       const Subcategories = subcategoryIDs.join(',');
       dates_commericals_count = await db.sequelize.query(`SELECT
@@ -52,7 +53,7 @@ exports.homepage = async (req, res) => {
       INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID
       WHERE bddirectory.insertDate >= DATE_SUB(CURDATE(), INTERVAL 3 YEAR)
       AND bdcommercialtype.commercialTypeName = "Spot/TVC"
-      AND bdbrand.subcategoryID IN (`+Subcategories+`)
+      AND bdbrand.subcategoryID IN (`+ Subcategories + `)
       AND bddirectory.isActive = 1
       GROUP BY DATE(bddirectory.insertDate)
       ORDER BY DATE(bddirectory.insertDate) DESC;`, { type: db.sequelize.QueryTypes.SELECT });
@@ -60,7 +61,32 @@ exports.homepage = async (req, res) => {
 
     const result = {};
     result.sideNav = {};
-    result.dates_commericals_count = dates_commericals_count;
+    let date_result = dates_commericals_count.reduce((acc, curr) => {
+      let date = new Date(curr.InsertDate);
+      let year = date.getFullYear();
+      let month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
+      let day = date.getDate();
+
+      let yearMonth = acc.find(item => item.year === year.toString() && item.month === month);
+
+      if (!yearMonth) {
+        yearMonth = {
+          year: year.toString(),
+          month: month,
+          data: []
+        };
+        acc.push(yearMonth);
+      }
+
+      yearMonth.data.push({
+        date: `${year}-${month}-${day < 10 ? '0' + day : day}`,
+        adcount: curr.CountDate
+      });
+
+      return acc;
+    }, []);
+
+    result.dates_commericals_count = date_result;
     categories.forEach(item => {
       const { subcategoryName, brandName, brandID, subcategoryID } = item;
       if (!result.sideNav[subcategoryName]) {
@@ -77,6 +103,7 @@ exports.homepage = async (req, res) => {
     res.status(500).send({ message: error.message || "Error Logging In" });
   }
 };
+
 exports.dateCommercials = async (req, res) => {
   const token = req.body.token;
   const commericals_date = req.body.commericals_date;
@@ -115,7 +142,7 @@ exports.dateCommercials = async (req, res) => {
     return res.status(200).send(result);
   }
 
-}
+};
 
 exports.searchCommercial = async (req, res) => {
   const token = req.body.token;
@@ -136,4 +163,14 @@ exports.searchCommercial = async (req, res) => {
     const result = await db.sequelize.query("SELECT bdbrand.brandName, bdcategory.categoryName, bdcategory.categoryID, bdsubcategory.subcategoryID, bdsubcategory.subcategoryName, bdcaption.captionName, bdcaption.captionID, bdcaption.Duration, bddirectory.insertDate, bddirectory.startTime, REPLACE(bddirectory.filePath,'//172.168.100.241','http://103.249.154.245:8484') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, Date(bddirectory.firstRunDate) AS transmissionDate, bddirectory.duration AS videoDuration, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID WHERE YEAR(bddirectory.insertDate) > '2017' AND bdsubcategory.subcategoryID IN (" + Subcategories + ") AND (bdbrand.brandName LIKE '%" + searchTerm + "%' OR bdcaption.captionName LIKE '%" + searchTerm + "%') AND bddirectory.isActive = 1 AND bdcommercialtype.commercialTypeName = 'Spot/TVC' ORDER BY Date(bddirectory.firstRunDate) LIMIT 100", { type: db.sequelize.QueryTypes.SELECT });
     return res.status(200).send(result);
   }
-}
+};
+
+exports.messages = async (req, res) => {
+  const token = req.body.token;
+  if (!token)
+    return res.status(400).send({ message: "Timed Out" });
+  const key = process.env.SECRET_CODE;
+  let person_id = parseInt(token) - parseInt(key);
+  const result = await db.sequelize.query("SELECT mgs.sender_name, mgs.sender_number,bdc.captionName, brand.brandName, bdc.Duration FROM mgsharinginternal as mgs INNER JOIN newsms_person as np ON mgs.receiver_number = np.personNumber INNER JOIN pktvmedia.bdcaption as bdc ON bdc.captionID = mgs.captionID INNER JOIN pktvmedia.bdbrand as brand ON brand.brandID = bdc.brandID WHERE np.personID = " + person_id + " ORDER BY mgs.insertdate DESC LIMIT 15", { type: db.sequelize.QueryTypes.SELECT });
+  return res.status(200).send(result);
+};
