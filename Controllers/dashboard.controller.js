@@ -61,32 +61,7 @@ exports.homepage = async (req, res) => {
 
     const result = {};
     result.sideNav = {};
-    let date_result = dates_commericals_count.reduce((acc, curr) => {
-      let date = new Date(curr.InsertDate);
-      let year = date.getFullYear();
-      let month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
-      let day = date.getDate();
-
-      let yearMonth = acc.find(item => item.year === year.toString() && item.month === month);
-
-      if (!yearMonth) {
-        yearMonth = {
-          year: year.toString(),
-          month: month,
-          data: []
-        };
-        acc.push(yearMonth);
-      }
-
-      yearMonth.data.push({
-        date: `${year}-${month}-${day < 10 ? '0' + day : day}`,
-        adcount: curr.CountDate
-      });
-
-      return acc;
-    }, []);
-
-    result.dates_commericals_count = date_result;
+    result.main_data = transformData(dates_commericals_count);
     categories.forEach(item => {
       const { subcategoryName, brandName, brandID, subcategoryID } = item;
       if (!result.sideNav[subcategoryName]) {
@@ -103,7 +78,31 @@ exports.homepage = async (req, res) => {
     res.status(500).send({ message: error.message || "Error Logging In" });
   }
 };
+function transformData(originalData) {
+  const transformedData = {};
 
+  originalData.forEach(item => {
+    const date = new Date(item.InsertDate);
+    const year = date.getFullYear();
+    const month = date.toLocaleString('default', { month: 'short' });
+    const day = date.getDate();
+    const key = `${day}-${month}-${year}`;
+
+    if (!transformedData[year]) {
+      transformedData[year] = {};
+    }
+
+    if (!transformedData[year][month]) {
+      transformedData[year][month] = {};
+    }
+
+    transformedData[year][month][key] = {
+      adCount: item.CountDate
+    };
+  });
+
+  return transformedData;
+}
 exports.dateCommercials = async (req, res) => {
   const token = req.body.token;
   const commericals_date = req.body.commericals_date;
