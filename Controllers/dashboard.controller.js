@@ -62,6 +62,7 @@ exports.homepage = async (req, res) => {
     const result = {};
     result.sideNav = {};
     result.main_data = transformData(dates_commericals_count);
+    result.dates_commericals_count = dates_commericals_count;
     categories.forEach(item => {
       const { subcategoryName, brandName, brandID, subcategoryID } = item;
       if (!result.sideNav[subcategoryName]) {
@@ -79,26 +80,65 @@ exports.homepage = async (req, res) => {
   }
 };
 function transformData(originalData) {
-  const transformedData = {};
+  const transformedData = [];
 
   originalData.forEach(item => {
     const date = new Date(item.InsertDate);
     const year = date.getFullYear();
-    const month = date.toLocaleString('default', { month: 'short' });
+    const month = date.toLocaleString('default', { month: 'short' }).toLowerCase();
     const day = date.getDate();
-    const key = `${day}-${month}-${year}`;
+    const key = `${year}-${month}-${day}`;
+    let yearObject = transformedData.find(obj => obj.year === year);
+    if (!yearObject) {
+      yearObject = { year, months: [] };
+      transformedData.push(yearObject);
+    }
+    let monthObject = yearObject.months.find(m => m.title === month);
+    if (!monthObject) {
+      monthObject = { title: month, data: [] };
+      yearObject.months.push(monthObject);
+    }
+    monthObject.data.push({
+      date: `${year}-${month}-${day}`,
+      count: item.CountDate
+    });
+  });
 
-    if (!transformedData[year]) {
-      transformedData[year] = {};
+  return transformedData;
+}
+function transformSearchData(rawData) {
+  const transformedData = [];
+
+  rawData.forEach(item => {
+    const date = new Date(item.transmissionDate);
+    const year = date.getFullYear();
+    const month = date.toLocaleString('default', { month: 'short' }).toLowerCase();
+    const day = date.getDate();
+    const key = `${year}-${month}-${day}`;
+
+    // Check if the year already exists in transformedData
+    let yearObject = transformedData.find(obj => obj.year === year);
+
+    // If not, create a new yearObject
+    if (!yearObject) {
+      yearObject = { year, month: [] };
+      transformedData.push(yearObject);
     }
 
-    if (!transformedData[year][month]) {
-      transformedData[year][month] = {};
+    // Check if the month already exists in the yearObject
+    let monthObject = yearObject.month.find(m => m.title === month);
+
+    // If not, create a new monthObject
+    if (!monthObject) {
+      monthObject = { title: month, data: [] };
+      yearObject.month.push(monthObject);
     }
 
-    transformedData[year][month][key] = {
-      adCount: item.CountDate
-    };
+    // Add the date and count to the monthObject's data array
+    monthObject.data.push({
+      date: `${year}-${month}-${day}`,
+      count: 1 // You may need to adjust this based on your logic for counting
+    });
   });
 
   return transformedData;
@@ -174,16 +214,27 @@ exports.searchCommercial = async (req, res) => {
   const isSuperUser = await db.sequelize.query("SELECT isActive FROM phonebook.newsms_subscription WHERE subcategoryID = 841 AND personID = " + person_id, { type: db.sequelize.QueryTypes.SELECT });
   if (isSuperUser.length > 0 && isSuperUser[0].isActive == 1) {
     const result = await db.sequelize.query("SELECT bdbrand.brandName, bdcategory.categoryName, bdcategory.categoryID, bdsubcategory.subcategoryID, bdsubcategory.subcategoryName, bdcaption.captionName, bdcaption.captionID, bdcaption.Duration, bddirectory.insertDate, bddirectory.startTime, REPLACE(bddirectory.filePath,'//172.168.100.241','http://103.249.154.245:8484') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, Date(bddirectory.firstRunDate) AS transmissionDate, bddirectory.duration AS videoDuration, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID WHERE YEAR(bddirectory.insertDate) > '2017' AND (bdbrand.brandName LIKE '%" + searchTerm + "%' OR bdcaption.captionName LIKE '%" + searchTerm + "%') AND bddirectory.isActive = 1 AND bdcommercialtype.commercialTypeName = 'Spot/TVC' ORDER BY Date(bddirectory.firstRunDate) LIMIT 100", { type: db.sequelize.QueryTypes.SELECT });
-    return res.status(200).send(groupByCategoryAndSubcategory(result));
+    let response = {};
+    response.searchResult = groupByCategoryAndSubcategory(result);
+    response.rawData = transformSearchData(result);
+    return res.status(200).send(response);
   }
   else {
     let subscribedSubcategories = await db.sequelize.query('SELECT subcategoryID FROM phonebook.newsms_subscription WHERE newsms_subscription.personID = ' + person_id, { type: db.sequelize.QueryTypes.SELECT });
     const subcategoryIDs = subscribedSubcategories.map(item => item.subcategoryID);
     const Subcategories = subcategoryIDs.join(',');
-    const result = await db.sequelize.query("SELECT bdbrand.brandName, bdcategory.categoryName, bdcategory.categoryID, bdsubcategory.subcategoryID, bdsubcategory.subcategoryName, bdcaption.captionName, bdcaption.captionID, bdcaption.Duration, bddirectory.insertDate, bddirectory.startTime, REPLACE(bddirectory.filePath,'//172.168.100.241','http://103.249.154.245:8484') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, Date(bddirectory.firstRunDate) AS transmissionDate, bddirectory.duration AS videoDuration, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID WHERE YEAR(bddirectory.insertDate) > '2017' AND bdsubcategory.subcategoryID IN (" + Subcategories + ") AND (bdbrand.brandName LIKE '%" + searchTerm + "%' OR bdcaption.captionName LIKE '%" + searchTerm + "%') AND bddirectory.isActive = 1 AND bdcommercialtype.commercialTypeName = 'Spot/TVC' ORDER BY Date(bddirectory.firstRunDate) LIMIT 100", { type: db.sequelize.QueryTypes.SELECT });
+    const result = await db.sequelize.query(`SELECT bdbrand.brandName, bdcategory.categoryName, bdcategory.categoryID, bdsubcategory.subcategoryID, bdsubcategory.subcategoryName, bdcaption.captionName, 
+    bdcaption.captionID, bdcaption.Duration, bddirectory.insertDate, bddirectory.startTime, CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', 'http://103.249.154.245:8484'),
+    REPLACE(bddirectory.fileName, '.flv', '.mp4')) AS fileUrl, Date(bddirectory.firstRunDate) AS transmissionDate, bddirectory.duration AS videoDuration, rechannel.channelName, 
+    bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID 
+    INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID 
+    INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID WHERE YEAR(bddirectory.insertDate) >= '2017' AND bdsubcategory.subcategoryID IN (${Subcategories}) AND 
+    (bdbrand.brandName LIKE '${"%" + searchTerm + "%"}' OR bdcaption.captionName LIKE '${"%" + searchTerm + "%"}') AND bddirectory.isActive = 1 AND bdcommercialtype.commercialTypeName = 'Spot/TVC' 
+    ORDER BY Date(bddirectory.firstRunDate) LIMIT 100`, { type: db.sequelize.QueryTypes.SELECT });
     let response = {};
     response.searchResult = groupByCategoryAndSubcategory(result);
-    response.rawData = filteredBrands;
+    response.rawData = transformSearchData(result);
+    response.result = result;
     return res.status(200).send(response);
   }
 };
