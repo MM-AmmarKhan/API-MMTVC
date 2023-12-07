@@ -49,12 +49,12 @@ exports.create = async (req, res) => {
                     alreadyExistEmployees++;
                 }
             }
-            let message = `${newEmployees.length} new employee(s) added`;
+            let message = `${newEmployees.length} new employee added`;
             if (alreadyExistEmployees != 0) {
-                message += ` and ${alreadyExistEmployees} employee(s) already exist`;
+                message += ` and ${alreadyExistEmployees} employee already exist`;
             }
             if (invalidEmployees != 0) {
-                message += ` and ${invalidEmployees} employee(s) have Invalid CNIC`;
+                message += ` and ${invalidEmployees} employee have Invalid CNIC`;
             }
             await t.commit();
             return res.status(200).send({
@@ -64,7 +64,7 @@ exports.create = async (req, res) => {
         } catch (error) {
             console.log(error);
             await t.rollback();
-            return res.status(500).send({ message: "Internal Server Error: Please try again later or contact support" });
+            return res.status(500).send({ message: "Error: Please try again later or contact support" });
         }
     }
     else {
