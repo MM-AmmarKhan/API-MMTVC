@@ -144,6 +144,7 @@ exports.delete = async (req, res) => {
     }
 };
 
+
 //// APIs for Employee Transactions
 exports.getEmployeeAmountsnDetails = async (req, res) => {
     let isAuth = verifyJWT(req.headers["access-token"]);
