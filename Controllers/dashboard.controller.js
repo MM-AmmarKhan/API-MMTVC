@@ -221,7 +221,6 @@ exports.dateCommercials = async (req, res) => {
   }
 
 };
-
 function groupByCategoryAndSubcategory(data) {
   const result = {};
 
@@ -337,13 +336,11 @@ exports.notification = async (req, res) => {
     try {
       let obj = {};
       let data = item.message.split('\r\n');
-      obj.category = data[1].replace("Cat:", '').trim();
       obj.brand = data[2].replace("Brd:", '').trim();
       obj.caption = data[3].replace("Cap:", '').trim();
       obj.channel = data[4].replace("Ch:", '').trim();
       obj.duration = data[5].replace("Dur:", '').trim();
       obj.date = data[6].replace("DT:", '').trim();
-      obj.startTime = data[7].replace("ST:", '').trim();
       response.push(obj);
     }
     catch (err) {
