@@ -362,4 +362,4 @@ exports.getProfile = async (req, res) => {
   response.company = result[0].company;
   response.phone = result[0].personNumber;
   return res.status(200).send(response);
-}
+};
