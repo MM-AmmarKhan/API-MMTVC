@@ -6,6 +6,7 @@ module.exports = app => {
     router.post("/search", user.searchCommercial);
     router.post("/searchBrand", user.searchCommercialBySubcategory);
     router.post("/dateCommercials", user.dateCommercials);
+    router.post("/getAdByDateBrandDuration", user.getAdByDateBrandDuration);
     router.post("/messages",user.messages);
     router.post("/getProfile",user.getProfile);
     router.post("/notification",user.notification);
