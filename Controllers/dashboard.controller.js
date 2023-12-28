@@ -361,7 +361,7 @@ exports.messages = async (req, res) => {
     return res.status(400).send({ message: "Timed Out" });
   const key = process.env.SECRET_CODE;
   let person_id = parseInt(token) - parseInt(key);
-  const result = await db.sequelize.query("SELECT mgs.sender_name, mgs.sender_number,bdc.captionName, brand.brandName, bdc.Duration, bddirectory.startTime, CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', 'http://103.249.154.245:8484'), REPLACE(bddirectory.fileName, '.flv', '.jpg')) AS pictureURL, CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', 'http://103.249.154.245:8484'),REPLACE(bddirectory.fileName, '.flv', '.mp4')) AS fileUrl ,DATE(bddirectory.insertDate) FROM phonebook.mgsharinginternal as mgs  INNER JOIN phonebook.newsms_person as np ON mgs.receiver_number = np.personNumber  INNER JOIN pktvmedia.bdcaption as bdc ON bdc.captionID = mgs.captionID  INNER JOIN pktvmedia.bddirectory ON bdc.captionID = bddirectory.captionID  INNER JOIN pktvmedia.bdbrand as brand ON brand.brandID = bdc.brandID WHERE np.personID = " + person_id + " ORDER BY mgs.insertdate DESC LIMIT 15", { type: db.sequelize.QueryTypes.SELECT });
+  const result = await db.sequelize.query("SELECT mgs.sender_name, mgs.sender_number,bdc.captionName, brand.brandName, bdc.Duration, bddirectory.startTime, rechannel.channelName,bdsubcategory.subcategoryName, CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', 'http://103.249.154.245:8484'), REPLACE(bddirectory.fileName, '.flv', '.jpg')) AS pictureURL, CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', 'http://103.249.154.245:8484'),REPLACE(bddirectory.fileName, '.flv', '.mp4')) AS fileUrl , DATE(bddirectory.insertDate) FROM phonebook.mgsharinginternal as mgs  INNER JOIN phonebook.newsms_person as np ON mgs.receiver_number = np.personNumber INNER JOIN pktvmedia.bdcaption as bdc ON bdc.captionID = mgs.captionID INNER JOIN pktvmedia.bddirectory ON bdc.captionID = bddirectory.captionID INNER JOIN pktvmedia.rechannel ON bddirectory.channelID = rechannel.channelID INNER JOIN pktvmedia.bdbrand as brand ON brand.brandID = bdc.brandID INNER JOIN pktvmedia.bdsubcategory ON brand.subcategoryID = bdsubcategory.subcategoryID WHERE np.personID = " + person_id + " ORDER BY mgs.insertdate DESC LIMIT 25", { type: db.sequelize.QueryTypes.SELECT });
   return res.status(200).send(result);
 };
 exports.notification = async (req, res) => {
@@ -370,7 +370,8 @@ exports.notification = async (req, res) => {
     return res.status(400).send({ message: "Timed Out" });
   const key = process.env.SECRET_CODE;
   let person_id = parseInt(token) - parseInt(key);
-  const result = await db.sequelize.query(`SELECT sms_jobs.message FROM phonebook.sms_jobs INNER JOIN phonebook.newsms_person ON newsms_person.personNumber = phonebook.sms_jobs.telNo WHERE newsms_person.personID = ` + person_id + ` AND sms_jobs.insertDate >= DATE_SUB(NOW(), INTERVAL 7 DAY)`, { type: db.sequelize.QueryTypes.SELECT });
+  // const result = await db.sequelize.query(`SELECT sms_jobs.message FROM phonebook.sms_jobs INNER JOIN phonebook.newsms_person ON newsms_person.personNumber = phonebook.sms_jobs.telNo WHERE newsms_person.personID = ` + person_id + ` AND sms_jobs.insertDate >= DATE_SUB(NOW(), INTERVAL 14 DAY)`, { type: db.sequelize.QueryTypes.SELECT });
+  const result = await db.sequelize.query(`SELECT sms_jobs.message FROM phonebook.sms_jobs INNER JOIN phonebook.newsms_person ON newsms_person.personNumber = phonebook.sms_jobs.telNo WHERE newsms_person.personID = ` + person_id + ` ORDER BY sms_jobs.insertDate DESC LIMIT 10`, { type: db.sequelize.QueryTypes.SELECT });
   let response = [];
   result.forEach(item => {
     try {
