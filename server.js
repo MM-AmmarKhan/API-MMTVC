@@ -38,6 +38,7 @@ if (process.env.NODE_ENV === 'production') {
 require('./Routes/activitylog.routes.js')(app);
 require('./Routes/dashboard.routes.js')(app);
 require('./Routes/login.routes.js')(app);
+require('./Routes/notifications.routes.js')(app);
 console.log("Listeing on "+port);
 
 module.exports = app;
