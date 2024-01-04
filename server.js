@@ -1,6 +1,8 @@
-const express = require('express');
-var app = express();
 require("./index.js");
+const express = require('express');
+const https = require('https');
+const fs = require('fs');
+var app = express();
 const cors = require("cors");
 var port = process.env.PORT || 3000;
 const rateLimit = require("express-rate-limit");
@@ -24,9 +26,13 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/", (req, res) => {    
     res.status(200).send({ message: "MMTVC-APP" });
 });
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production') {    
+    const privateKey = fs.readFileSync('/etc/letsencrypt/live/aiksalaryaur.pk/privkey.pem', 'utf8');
+    const certificate = fs.readFileSync('/etc/letsencrypt/live/aiksalaryaur.pk/fullchain.pem', 'utf8');
+    const credentials = { key: privateKey, cert: certificate };
+    const httpsServer = https.createServer(credentials, app);
+    httpsServer.listen(port, '0.0.0.0');
     console.log('Running in production mode');
-    app.listen(port, '0.0.0.0');
 } else if(process.env.NODE_ENV === 'local'){
     console.log('Running in local mode');
     app.listen(port,'172.168.98.15');
