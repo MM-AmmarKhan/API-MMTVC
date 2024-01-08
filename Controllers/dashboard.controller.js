@@ -5,13 +5,15 @@ exports.homepage = async (req, res) => {
   const token = req.body.token;
   const key = process.env.SECRET_CODE;
   let person_id = parseInt(token) - parseInt(key);
+  const result = {};
+  result.main_data = [];
   try {
     if (!person_id || person_id < 1) {
       return res.status(400).send({ message: "Invalid User" });
     }
     const isSuperUser = await db.sequelize.query("SELECT isActive FROM phonebook.newsms_subscription WHERE subcategoryID = 841 AND personID = " + person_id, { type: db.sequelize.QueryTypes.SELECT });
     let categories;
-    let dates_commericals_count;
+    let dates_commericals_count;    
     let query = "SELECT DISTINCT phonebook.bdsubcategory.subcategoryName, phonebook.bdsubcategory.subcategoryID, phonebook.bdbrand.brandName, phonebook.bdbrand.brandID";
     if (isSuperUser.length > 0 && isSuperUser[0].isActive == 1) {
       categories = await db.sequelize.query(query + `
@@ -50,19 +52,18 @@ exports.homepage = async (req, res) => {
           AND bdcommercialtype.commercialTypeName = "Spot/TVC"
           AND bdbrand.subcategoryID IN (`+ Subcategories + `) AND bddirectory.isActive = 1 GROUP BY DATE(bddirectory.firstRunDate) ORDER BY DATE(bddirectory.firstRunDate) DESC;`, { type: db.sequelize.QueryTypes.SELECT });
       }
-      else {
-        return res.status(404).send({ message: "Subscription not found" });
+      else {        
+        return res.status(404).send(result);
       }
-    }
-    const result = {};
+    }    
     result.main_data = transformData(dates_commericals_count);
     if (Object.keys(result).length) {
       res.status(200).send(result);
     } else {
-      res.status(404).send({ message: error.message || "Subscription not found" });
+      res.status(404).send(result);
     }
   } catch (error) {
-    res.status(500).send({ message: error.message || "Error Logging In" });
+    res.status(500).send(result);
   }
 };
 exports.sidebar = async (req, res) => {
@@ -288,7 +289,7 @@ exports.searchCommercial = async (req, res) => {
   try {
     const isSuperUser = await db.sequelize.query("SELECT isActive FROM phonebook.newsms_subscription WHERE subcategoryID = 841 AND personID = " + person_id, { type: db.sequelize.QueryTypes.SELECT });
     if (isSuperUser.length > 0 && isSuperUser[0].isActive == 1) {
-      const result = await db.sequelize.query("SELECT bdbrand.brandName, bdcategory.categoryName, bdsubcategory.subcategoryID, bdsubcategory.subcategoryName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID  INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID WHERE YEAR(bddirectory.firstRunDate) >= " + process.env.START_YEAR + " AND (bdbrand.brandName LIKE '%" + searchTerm + "%' OR bdcaption.captionName LIKE '%" + searchTerm + "%') AND bddirectory.isActive = 1 AND bdcommercialtype.commercialTypeName = 'Spot/TVC' GROUP BY bdbrand.brandName ORDER BY bdbrand.brandName LIMIT 100", { type: db.sequelize.QueryTypes.SELECT });
+      const result = await db.sequelize.query("SELECT bdbrand.brandName, bdbrand.brandID, bdcategory.categoryName, bdsubcategory.subcategoryID, bdsubcategory.subcategoryName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID  INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID WHERE YEAR(bddirectory.firstRunDate) >= " + process.env.START_YEAR + " AND (bdbrand.brandName LIKE '%" + searchTerm + "%' OR bdcaption.captionName LIKE '%" + searchTerm + "%') AND bddirectory.isActive = 1 AND bdcommercialtype.commercialTypeName = 'Spot/TVC' GROUP BY bdbrand.brandName ORDER BY bdbrand.brandName LIMIT 100", { type: db.sequelize.QueryTypes.SELECT });
       let response = {};
       response = formatSearchResult(groupBySubcategory(result));
       return res.status(200).send(response);
