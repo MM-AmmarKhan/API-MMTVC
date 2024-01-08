@@ -291,7 +291,7 @@ exports.searchCommercial = async (req, res) => {
     if (isSuperUser.length > 0 && isSuperUser[0].isActive == 1) {
       const result = await db.sequelize.query("SELECT bdbrand.brandName, bdbrand.brandID, bdcategory.categoryName, bdsubcategory.subcategoryID, bdsubcategory.subcategoryName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID  INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID WHERE YEAR(bddirectory.firstRunDate) >= " + process.env.START_YEAR + " AND (bdbrand.brandName LIKE '%" + searchTerm + "%' OR bdcaption.captionName LIKE '%" + searchTerm + "%') AND bddirectory.isActive = 1 AND bdcommercialtype.commercialTypeName = 'Spot/TVC' GROUP BY bdbrand.brandName ORDER BY bdbrand.brandName LIMIT 100", { type: db.sequelize.QueryTypes.SELECT });
       let response = {};
-      response = formatSearchResult(groupBySubcategory(result));
+      response.searchResult = formatSearchResult(groupBySubcategory(result));
       return res.status(200).send(response);
     }
     else {
