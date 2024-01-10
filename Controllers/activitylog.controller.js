@@ -19,11 +19,13 @@ exports.internalShare = async (req, res) => {
 exports.externalShare = async (req, res) => {
   try {
     const { token, to_name, to_email, captionid, file_path } = req.body;
-    if (!token, !to_name, !to_email, !captionid)
+    if (!token, !to_name, !to_email, !captionid, !file_path)
       return res.status(400).send({ message: "Missing fields" });
     let person_id = parseInt(token) - parseInt(key);
     const data = await db.sequelize.query("SELECT personName, personNumber FROM phonebook.newsms_person WHERE personID = '" + person_id + "'", { type: db.sequelize.QueryTypes.SELECT });
-    const query = `INSERT INTO phonebook.mgsharingexternal (sender_name, sender_email, receiver_name, receiver_email, captionID, file_path) VALUES ('${data[0].personName}', '${data[0].email}', '${to_name}', '${to_email}', '${captionid}', '${file_path}')`;
+    console.log(data)
+    let sendercontact = data[0].email || data[0].personNumber;
+    const query = `INSERT INTO phonebook.mgsharingexternal (sender_name, sender_email, receiver_name, receiver_email, captionID, file_path) VALUES ('${data[0].personName}', '${sendercontact}', '${to_name}', '${to_email}', '${captionid}', '${file_path}')`;
     const isinsert = await db.sequelize.query(query, { type: db.sequelize.QueryTypes.INSERT });
     return res.status(200).send({ message: "Success" });;
   } catch (error) {
