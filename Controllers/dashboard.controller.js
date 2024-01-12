@@ -148,30 +148,27 @@ function transformSearchData(rawData) {
     const month = date.toLocaleString('default', { month: 'short' }).toLowerCase();
     const day = date.getDate();
     const formattedDay = day.toString().padStart(2, '0');
-
-    // Check if the year already exists in transformedData
     let yearObject = transformedData.find(obj => obj.year === year);
-
-    // If not, create a new yearObject
     if (!yearObject) {
       yearObject = { year, month: [] };
       transformedData.push(yearObject);
     }
-
-    // Check if the month already exists in the yearObject
     let monthObject = yearObject.month.find(m => m.title.toUpperCase() === month.toUpperCase());
-
-    // If not, create a new monthObject
     if (!monthObject) {
       monthObject = { title: month.toUpperCase(), data: [] };
       yearObject.month.push(monthObject);
     }
-
-    // Add the date and count to the monthObject's data array
-    monthObject.data.push({
-      date: `${formattedDay}-${month.toUpperCase()}-${year}`,
-      count: 1 // You may need to adjust this based on your logic for counting
-    });
+    const existingDateIndex = monthObject.data.findIndex(entry =>
+      entry.date === `${formattedDay}-${month.toUpperCase()}-${year}`
+    );
+    if (existingDateIndex !== -1) {
+      monthObject.data[existingDateIndex].count++;
+    } else {
+      monthObject.data.push({
+        date: `${formattedDay}-${month.toUpperCase()}-${year}`,
+        count: 1
+      });
+    }
   });
 
   return transformedData;
@@ -410,7 +407,10 @@ exports.getAdByDateBrandDuration = async (req, res) => {
     return res.status(200).send(result);
   }
   else {
-    const result = await db.sequelize.query(`SELECT bddirectory.firstRunDate as insertDate, bddirectory.startTime, bddirectory.duration, REPLACE(bddirectory.filePath,'//172.168.100.241','http://103.249.154.245:8484') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, bdcaption.captionName, bdbrand.brandName, bdsubcategory.subcategoryName, bdcategory.categoryName, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID WHERE bdbrand.brandName = '` + brand + `' AND ((bddirectory.firstRunDate >= DATE_SUB('` + date + `', INTERVAL 1 DAY)) OR (bdcaption.editDate >= DATE_SUB('` + date + `', INTERVAL 1 DAY))) AND bdcommercialtype.commercialTypeName = 'Spot/TVC' AND bddirectory.isActive = 1`, { type: db.sequelize.QueryTypes.SELECT });
+    const result = await db.sequelize.query(`SELECT bddirectory.firstRunDate as insertDate, bddirectory.startTime, bddirectory.duration, REPLACE(bddirectory.filePath,'//172.168.100.241','http://103.249.154.245:8484') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, bdcaption.captionName, bdbrand.brandName, bdsubcategory.subcategoryName, bdcategory.categoryName, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID WHERE bdbrand.brandName = '` + brand + `' AND DATE(bddirectory.firstRunDate) = DATE('` + date + `') AND bdcommercialtype.commercialTypeName = 'Spot/TVC' AND bddirectory.isActive = 1`, { type: db.sequelize.QueryTypes.SELECT });
+    if(result.length == 0){
+      result = await db.sequelize.query(`SELECT bddirectory.firstRunDate as insertDate, bddirectory.startTime, bddirectory.duration, REPLACE(bddirectory.filePath,'//172.168.100.241','http://103.249.154.245:8484') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, bdcaption.captionName, bdbrand.brandName, bdsubcategory.subcategoryName, bdcategory.categoryName, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID WHERE bdbrand.brandName = '` + brand + `' AND ((bddirectory.firstRunDate >= DATE_SUB('` + date + `', INTERVAL 1 DAY)) OR (bdcaption.editDate >= DATE_SUB('` + date + `', INTERVAL 1 DAY))) AND bdcommercialtype.commercialTypeName = 'Spot/TVC' AND bddirectory.isActive = 1`, { type: db.sequelize.QueryTypes.SELECT });
+    }
     return res.status(200).send(result);
   }
 }
