@@ -24,12 +24,83 @@ def send_email(receiver_name, receiver_email, sender_name, link):
     current_year = datetime.now().year
     subject = f"Media Monitors - New TVC Email App Share from {sender_name}"
     tiny_url = get_tiny_url(link)
+    css= """
+    <style>
+        .intro { 
+            color: rgb(128,128,128); 
+        }
+        hr { 
+            display: block;
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+            margin-left: auto;
+            margin-right: auto;
+            border-style: inset;
+            border-width: 1px;
+        }
 
+        .btn {
+            display: inline-block;
+            padding: 6px 12px;
+            margin-bottom: 0;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.42857143;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            -ms-touch-action: manipulation;
+            touch-action: manipulation;
+            cursor: pointer;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            background-image: none;
+            border: 1px solid transparent;
+            border-radius: 4px
+        }
+
+        .btn-danger {
+            color: #fff;
+            background-color: #d9534f;
+            border-color: #d43f3a
+        }
+        .btn-danger.focus,
+        .btn-danger:focus {
+            background-color: #c9302c;
+            border-color: #761c19
+        }
+        .btn-danger:hover {
+            background-color: #c9302c;
+            border-color: #ac2925
+        }
+        a.text-danger:focus,
+        a.text-danger:hover {
+            color: #843534
+        }
+        a:active,
+        a:hover {
+            outline: 0;
+            text-decoration: none;
+            color: #23527c;
+        }
+        a:focus {
+            outline: 5px auto -webkit-focus-ring-color;
+            outline-offset: -2px
+        }
+        p {
+            orphans: 3;
+            widows: 3    
+            margin: 0 0 10px;
+        }
+    </style>
+    """
     message = f"""
     <html>
     <head>
         <style>
-            /* Your CSS styles here */
+         {css}
         </style>
     </head>
     <body>
