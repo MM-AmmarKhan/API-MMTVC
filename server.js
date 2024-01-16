@@ -27,8 +27,8 @@ app.get("/", (req, res) => {
     res.status(200).send({ message: "MMTVC-APP" });
 });
 if (process.env.NODE_ENV === 'production') {    
-    const privateKey = fs.readFileSync('/etc/letsencrypt/live/aiksalaryaur.pk/privkey.pem', 'utf8');
-    const certificate = fs.readFileSync('/etc/letsencrypt/live/aiksalaryaur.pk/fullchain.pem', 'utf8');
+    const privateKey = fs.readFileSync(process.env.PRIVATEKEY_PATH, 'utf8');
+    const certificate = fs.readFileSync(process.env.CERTKEY_PATH, 'utf8');
     const credentials = { key: privateKey, cert: certificate };
     const httpsServer = https.createServer(credentials, app);
     httpsServer.listen(port, '0.0.0.0');

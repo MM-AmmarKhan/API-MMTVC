@@ -1,0 +1,13 @@
+MAIL_SERVER = '172.168.101.4'
+MAIL_PORT = 587  # Change this to your mail port
+MAIL_USE_TLS = False  # Set to True if your server uses TLS
+MAIL_USE_SSL = False  # Set to True if your server uses SSL
+MAIL_USERNAME = 'ammar.khan@mediamonitors.com.pk'  # Set your mail server username if applicable
+MAIL_PASSWORD = 'Amm@r110'  # Set your mail server password if applicable
+MAIL_DEFAULT_SENDER = 'ammar.khan@mediamonitors.com.pk'  # Set your mail server username if applicable
+# MAIL_DEFAULT_SENDER = 'info@mediamonitors.com.pk'
+DATABASE_HOST = '172.168.100.240'
+DATABASE_PHONEBOOK = 'phonebook'
+DATABASE_USER = 'dev'
+DATABASE_PASSWORD = 'master'
+DATABASE_PORT = 3306
