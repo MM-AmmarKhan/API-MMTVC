@@ -26,7 +26,7 @@ exports.tvcalert = async (req, res) => {
       };
       const response = await axios.post('https://fcm.googleapis.com/fcm/send', data, { headers });
       if(response.data.failure > 0) {
-        return res.status(500).send('Internal Server Error');
+        return res.status(500).send('MMTVC API Error:',response.data);
       }
       const result = await db.sequelize.query(`UPDATE phonebook.sms_jobs SET delivered = 1 WHERE jobsID = ` + jobid, { type: db.sequelize.QueryTypes.UPDATE });
       return res.status(200).send('Delivered');
@@ -40,7 +40,7 @@ exports.tvcalert = async (req, res) => {
       };
       const response = await axios.post('https://fcm.googleapis.com/fcm/send', data, { headers });
       if(response.data.failure > 0) {
-        return res.status(500).send('Internal Server Error');
+        return res.status(500).send('MMTVC API Error:',response.data);
       }
       const result = await db.sequelize.query(`UPDATE phonebook.sms_jobs SET delivered = 1 WHERE jobsID = ` + jobid, { type: db.sequelize.QueryTypes.UPDATE });
       return res.status(200).send('Delivered');
