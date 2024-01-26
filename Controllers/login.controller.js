@@ -23,7 +23,7 @@ exports.auth = async (req, res) => {
       return res.status(404).send({ message: "Invalid User: Not Found" });
     }
     const userData = data[0];
-    if(phonenumber !== "03012345678" || phonenumber !== "03123456789")
+    if(phonenumber == "03012345678" || phonenumber == "03123456789")
     {
       const key = process.env.SECRET_CODE;    
       const result = {
