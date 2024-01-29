@@ -412,7 +412,7 @@ exports.notification = async (req, res) => {
     return res.status(400).send({ message: "Timed Out" });
   const key = process.env.SECRET_CODE;
   let person_id = parseInt(token) - parseInt(key);
-  const result = await db.sequelize.query(`SELECT sms_jobs.message FROM phonebook.sms_jobs INNER JOIN phonebook.newsms_person ON newsms_person.personNumber = phonebook.sms_jobs.telNo WHERE newsms_person.personID = ` + person_id + ` ORDER BY sms_jobs.insertDate DESC LIMIT 10`, { type: db.sequelize.QueryTypes.SELECT });
+  const result = await db.sequelize.query(`SELECT sms_jobs.message FROM phonebook.sms_jobs INNER JOIN phonebook.newsms_person ON newsms_person.personNumber = phonebook.sms_jobs.telNo WHERE newsms_person.personID = ` + person_id + ` ORDER BY sms_jobs.insertDate DESC LIMIT ` + process.env.NOTIFICATION_LIMIT, { type: db.sequelize.QueryTypes.SELECT });
   let response = [];
   result.forEach(item => {
     try {
