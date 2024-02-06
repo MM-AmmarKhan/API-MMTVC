@@ -263,6 +263,91 @@ exports.dateCommercials = async (req, res) => {
   }
 
 };
+exports.captionIDCommercials = async (req, res) => {
+  const token = req.body.token;
+  const captionID = req.body.captionID;
+  if (!token || !captionID)
+    return res.status(400).send({ message: "Token or Date missing" });
+  const key = process.env.SECRET_CODE;
+  let person_id = parseInt(token) - parseInt(key);
+  const isSuperUser = await db.sequelize.query("SELECT isActive FROM phonebook.newsms_subscription WHERE subcategoryID IN (0,841) AND personID = " + person_id, { type: db.sequelize.QueryTypes.SELECT });
+  if (isSuperUser.length > 0 && isSuperUser[0].isActive == 1) {
+    categories = await db.sequelize.query(
+      `
+      SELECT DISTINCT bdbrand.brandName, bdcategory.categoryName, bdcategory.categoryID, bdsubcategory.subcategoryName, bdcaption.captionName, bdcaption.captionID, bdcaption.Duration, bddirectory.firstRunDate as insertDate, bddirectory.startTime, 
+      REPLACE(bddirectory.filePath,'//172.168.100.241','http://103.249.154.245:8484') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName,CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', 'http://103.249.154.245:8484'), REPLACE(bddirectory.fileName, '.flv', '.mp4')) AS videoURL,
+      CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', 'http://103.249.154.245:8484'), REPLACE(bddirectory.fileName, '.flv', '.jpg')) AS pictureURL,
+      Date(bddirectory.firstRunDate) AS transmissionDate,
+      bddirectory.duration AS videoDuration,
+      rechannel.channelName,
+      bdcommercialtype.commercialTypeName  
+      FROM bddirectory
+      INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID
+      INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID
+      INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID
+      INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID
+      INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID
+      INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID
+      WHERE bdcaption.captionID = '`+ captionID + `'
+      AND YEAR(bddirectory.firstRunDate) >= ` + process.env.START_YEAR + `
+      AND bdcommercialtype.commercialTypeName = "Spot/TVC"
+      AND bddirectory.isActive = 1
+      ORDER BY bddirectory.firstRunDate ASC`,
+      { type: db.sequelize.QueryTypes.SELECT }
+    );
+    const filledCategories = categories.map(category => {
+      return {
+        brandName: category.brandName || defaultValues.brandName,
+        categoryName: category.categoryName || defaultValues.categoryName,
+        categoryID: category.categoryID || defaultValues.categoryID,
+        subcategoryName: category.subcategoryName || defaultValues.subcategoryName,
+        captionName: category.captionName || defaultValues.captionName,
+        captionID: category.captionID || defaultValues.captionID,
+        Duration: category.Duration || defaultValues.Duration,
+        insertDate: category.insertDate || defaultValues.insertDate,
+        startTime: category.startTime || defaultValues.startTime,
+        filePath: category.filePath || defaultValues.filePath,
+        fileName: category.fileName || defaultValues.fileName,
+        videoURL: category.videoURL || defaultValues.videoURL,
+        pictureURL: category.pictureURL || defaultValues.pictureURL,
+        transmissionDate: category.transmissionDate || defaultValues.transmissionDate,
+        videoDuration: category.videoDuration || defaultValues.videoDuration,
+        channelName: category.channelName || defaultValues.channelName,
+        commercialTypeName: category.commercialTypeName || defaultValues.commercialTypeName,
+      };
+    });
+    return res.status(200).send(filledCategories);
+  }
+  else {
+    let subscribedSubcategories = await db.sequelize.query('SELECT subcategoryID FROM phonebook.newsms_subscription WHERE newsms_subscription.personID = ' + person_id, { type: db.sequelize.QueryTypes.SELECT });
+    const subcategoryIDs = subscribedSubcategories.map(item => item.subcategoryID);
+    const Subcategories = subcategoryIDs.join(',');
+    const result = await db.sequelize.query("SELECT bdbrand.brandName, bdcategory.categoryName, bdcategory.categoryID, bdsubcategory.subcategoryID, bdsubcategory.subcategoryName, bdcaption.captionName, bdcaption.captionID, bdcaption.Duration, bddirectory.firstRunDate, bddirectory.startTime, REPLACE(bddirectory.filePath,'//172.168.100.241','http://103.249.154.245:8484') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, Date(bddirectory.firstRunDate) AS transmissionDate, bddirectory.duration AS videoDuration, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID WHERE WHERE bdcaption.captionID = '"+ captionID + "' AND bdsubcategory.subcategoryID IN (" + Subcategories + ") ", { type: db.sequelize.QueryTypes.SELECT });
+    const filledCategories = result.map(category => {
+      return {
+        brandName: category.brandName || defaultValues.brandName,
+        categoryName: category.categoryName || defaultValues.categoryName,
+        categoryID: category.categoryID || defaultValues.categoryID,
+        subcategoryName: category.subcategoryName || defaultValues.subcategoryName,
+        captionName: category.captionName || defaultValues.captionName,
+        captionID: category.captionID || defaultValues.captionID,
+        Duration: category.Duration || defaultValues.Duration,
+        insertDate: category.insertDate || defaultValues.insertDate,
+        startTime: category.startTime || defaultValues.startTime,
+        filePath: category.filePath || defaultValues.filePath,
+        fileName: category.fileName || defaultValues.fileName,
+        videoURL: category.videoURL || defaultValues.videoURL,
+        pictureURL: category.pictureURL || defaultValues.pictureURL,
+        transmissionDate: category.transmissionDate || defaultValues.transmissionDate,
+        videoDuration: category.videoDuration || defaultValues.videoDuration,
+        channelName: category.channelName || defaultValues.channelName,
+        commercialTypeName: category.commercialTypeName || defaultValues.commercialTypeName,
+      };
+    });
+    return res.status(200).send(filledCategories);
+  }
+
+};
 function formatSearchResult(data) {
   const result = [];
 
@@ -412,17 +497,21 @@ exports.notification = async (req, res) => {
     return res.status(400).send({ message: "Timed Out" });
   const key = process.env.SECRET_CODE;
   let person_id = parseInt(token) - parseInt(key);
-  const result = await db.sequelize.query(`SELECT sms_jobs.message FROM phonebook.sms_jobs INNER JOIN phonebook.newsms_person ON newsms_person.personNumber = phonebook.sms_jobs.telNo WHERE newsms_person.personID = ` + person_id + ` ORDER BY sms_jobs.insertDate DESC LIMIT ` + process.env.NOTIFICATION_LIMIT, { type: db.sequelize.QueryTypes.SELECT });
+  const result = await db.sequelize.query(`SELECT sms_jobs.message, CaptionID FROM phonebook.sms_jobs INNER JOIN phonebook.newsms_person ON newsms_person.personNumber = phonebook.sms_jobs.telNo WHERE newsms_person.personID = ` + person_id + ` ORDER BY sms_jobs.insertDate DESC LIMIT ` + process.env.NOTIFICATION_LIMIT, { type: db.sequelize.QueryTypes.SELECT });
   let response = [];
   result.forEach(item => {
     try {
       let obj = {};
       let data = item.message.split('\r\n');
-      obj.brand = data[2].replace("Brd:", '').trim();
-      obj.caption = data[3].replace("Cap:", '').trim();
-      obj.channel = data[4].replace("Ch:", '').trim();
-      obj.duration = data[5].replace("Dur:", '').trim();
-      obj.date = data[6].replace("DT:", '').trim();
+      if(item.CaptionID)
+      {
+        obj.captionID = item.CaptionID;
+      }
+      obj.brand = data[2].replace("Brd:", '').replace("Brand:", '').trim();
+      obj.caption = data[3].replace("Cap:", '').replace("Caption:").trim();
+      obj.channel = data[4].replace("Ch:", '').replace("Channel:").trim();
+      obj.duration = data[5].replace("Dur:", '').replace("Duration:").trim();
+      obj.date = data[6].replace("DT:", '').replace("Transmission Date:").trim();
       response.push(obj);
     }
     catch (err) {

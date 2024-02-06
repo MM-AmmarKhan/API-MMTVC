@@ -10,5 +10,6 @@ module.exports = app => {
     router.post("/messages",user.messages);
     router.post("/getProfile",user.getProfile);
     router.post("/notification",user.notification);
+    router.post("/getAdByCaptionID",user.captionIDCommercials);
     app.use('/api/main', router);
 };
