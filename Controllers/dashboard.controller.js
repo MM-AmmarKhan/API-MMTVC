@@ -190,8 +190,8 @@ exports.dateCommercials = async (req, res) => {
     categories = await db.sequelize.query(
       `
       SELECT DISTINCT bdbrand.brandName, bdcategory.categoryName, bdcategory.categoryID, bdsubcategory.subcategoryName, bdcaption.captionName, bdcaption.captionID, bdcaption.Duration, bddirectory.firstRunDate as insertDate, bddirectory.startTime, 
-      REPLACE(bddirectory.filePath,'//172.168.100.241','http://103.249.154.245:8484') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName,CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', 'http://103.249.154.245:8484'), REPLACE(bddirectory.fileName, '.flv', '.mp4')) AS videoURL,
-      CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', 'http://103.249.154.245:8484'), REPLACE(bddirectory.fileName, '.flv', '.jpg')) AS pictureURL,
+      REPLACE(bddirectory.filePath,'//172.168.100.241','`+ process.env.VIDEO_URL + `') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName,CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241','` + process.env.VIDEO_URL + `'), REPLACE(bddirectory.fileName, '.flv', '.mp4')) AS videoURL,
+      CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', '`+ process.env.VIDEO_URL + `'), REPLACE(bddirectory.fileName, '.flv', '.jpg')) AS pictureURL,
       Date(bddirectory.firstRunDate) AS transmissionDate,
       bddirectory.duration AS videoDuration,
       rechannel.channelName,
@@ -237,92 +237,7 @@ exports.dateCommercials = async (req, res) => {
     let subscribedSubcategories = await db.sequelize.query('SELECT subcategoryID FROM phonebook.newsms_subscription WHERE newsms_subscription.personID = ' + person_id, { type: db.sequelize.QueryTypes.SELECT });
     const subcategoryIDs = subscribedSubcategories.map(item => item.subcategoryID);
     const Subcategories = subcategoryIDs.join(',');
-    const result = await db.sequelize.query("SELECT bdbrand.brandName, bdcategory.categoryName, bdcategory.categoryID, bdsubcategory.subcategoryID, bdsubcategory.subcategoryName, bdcaption.captionName, bdcaption.captionID, bdcaption.Duration, bddirectory.firstRunDate, bddirectory.startTime, REPLACE(bddirectory.filePath,'//172.168.100.241','http://103.249.154.245:8484') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, Date(bddirectory.firstRunDate) AS transmissionDate, bddirectory.duration AS videoDuration, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID WHERE DATE(bddirectory.firstRunDate) = '" + commericals_date + "' AND bdsubcategory.subcategoryID IN (" + Subcategories + ") ", { type: db.sequelize.QueryTypes.SELECT });
-    const filledCategories = result.map(category => {
-      return {
-        brandName: category.brandName || defaultValues.brandName,
-        categoryName: category.categoryName || defaultValues.categoryName,
-        categoryID: category.categoryID || defaultValues.categoryID,
-        subcategoryName: category.subcategoryName || defaultValues.subcategoryName,
-        captionName: category.captionName || defaultValues.captionName,
-        captionID: category.captionID || defaultValues.captionID,
-        Duration: category.Duration || defaultValues.Duration,
-        insertDate: category.insertDate || defaultValues.insertDate,
-        startTime: category.startTime || defaultValues.startTime,
-        filePath: category.filePath || defaultValues.filePath,
-        fileName: category.fileName || defaultValues.fileName,
-        videoURL: category.videoURL || defaultValues.videoURL,
-        pictureURL: category.pictureURL || defaultValues.pictureURL,
-        transmissionDate: category.transmissionDate || defaultValues.transmissionDate,
-        videoDuration: category.videoDuration || defaultValues.videoDuration,
-        channelName: category.channelName || defaultValues.channelName,
-        commercialTypeName: category.commercialTypeName || defaultValues.commercialTypeName,
-      };
-    });
-    return res.status(200).send(filledCategories);
-  }
-
-};
-exports.captionIDCommercials = async (req, res) => {
-  const token = req.body.token;
-  const captionID = req.body.captionID;
-  if (!token || !captionID)
-    return res.status(400).send({ message: "Token or Date missing" });
-  const key = process.env.SECRET_CODE;
-  let person_id = parseInt(token) - parseInt(key);
-  const isSuperUser = await db.sequelize.query("SELECT isActive FROM phonebook.newsms_subscription WHERE subcategoryID IN (0,841) AND personID = " + person_id, { type: db.sequelize.QueryTypes.SELECT });
-  if (isSuperUser.length > 0 && isSuperUser[0].isActive == 1) {
-    categories = await db.sequelize.query(
-      `
-      SELECT DISTINCT bdbrand.brandName, bdcategory.categoryName, bdcategory.categoryID, bdsubcategory.subcategoryName, bdcaption.captionName, bdcaption.captionID, bdcaption.Duration, bddirectory.firstRunDate as insertDate, bddirectory.startTime, 
-      REPLACE(bddirectory.filePath,'//172.168.100.241','http://103.249.154.245:8484') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName,CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', 'http://103.249.154.245:8484'), REPLACE(bddirectory.fileName, '.flv', '.mp4')) AS videoURL,
-      CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', 'http://103.249.154.245:8484'), REPLACE(bddirectory.fileName, '.flv', '.jpg')) AS pictureURL,
-      Date(bddirectory.firstRunDate) AS transmissionDate,
-      bddirectory.duration AS videoDuration,
-      rechannel.channelName,
-      bdcommercialtype.commercialTypeName  
-      FROM bddirectory
-      INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID
-      INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID
-      INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID
-      INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID
-      INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID
-      INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID
-      WHERE bdcaption.captionID = '`+ captionID + `'
-      AND YEAR(bddirectory.firstRunDate) >= ` + process.env.START_YEAR + `
-      AND bdcommercialtype.commercialTypeName = "Spot/TVC"
-      AND bddirectory.isActive = 1
-      ORDER BY bddirectory.firstRunDate ASC`,
-      { type: db.sequelize.QueryTypes.SELECT }
-    );
-    const filledCategories = categories.map(category => {
-      return {
-        brandName: category.brandName || defaultValues.brandName,
-        categoryName: category.categoryName || defaultValues.categoryName,
-        categoryID: category.categoryID || defaultValues.categoryID,
-        subcategoryName: category.subcategoryName || defaultValues.subcategoryName,
-        captionName: category.captionName || defaultValues.captionName,
-        captionID: category.captionID || defaultValues.captionID,
-        Duration: category.Duration || defaultValues.Duration,
-        insertDate: category.insertDate || defaultValues.insertDate,
-        startTime: category.startTime || defaultValues.startTime,
-        filePath: category.filePath || defaultValues.filePath,
-        fileName: category.fileName || defaultValues.fileName,
-        videoURL: category.videoURL || defaultValues.videoURL,
-        pictureURL: category.pictureURL || defaultValues.pictureURL,
-        transmissionDate: category.transmissionDate || defaultValues.transmissionDate,
-        videoDuration: category.videoDuration || defaultValues.videoDuration,
-        channelName: category.channelName || defaultValues.channelName,
-        commercialTypeName: category.commercialTypeName || defaultValues.commercialTypeName,
-      };
-    });
-    return res.status(200).send(filledCategories);
-  }
-  else {
-    let subscribedSubcategories = await db.sequelize.query('SELECT subcategoryID FROM phonebook.newsms_subscription WHERE newsms_subscription.personID = ' + person_id, { type: db.sequelize.QueryTypes.SELECT });
-    const subcategoryIDs = subscribedSubcategories.map(item => item.subcategoryID);
-    const Subcategories = subcategoryIDs.join(',');
-    const result = await db.sequelize.query("SELECT bdbrand.brandName, bdcategory.categoryName, bdcategory.categoryID, bdsubcategory.subcategoryID, bdsubcategory.subcategoryName, bdcaption.captionName, bdcaption.captionID, bdcaption.Duration, bddirectory.firstRunDate, bddirectory.startTime, REPLACE(bddirectory.filePath,'//172.168.100.241','http://103.249.154.245:8484') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, Date(bddirectory.firstRunDate) AS transmissionDate, bddirectory.duration AS videoDuration, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID WHERE WHERE bdcaption.captionID = '"+ captionID + "' AND bdsubcategory.subcategoryID IN (" + Subcategories + ") ", { type: db.sequelize.QueryTypes.SELECT });
+    const result = await db.sequelize.query("SELECT bdbrand.brandName, bdcategory.categoryName, bdcategory.categoryID, bdsubcategory.subcategoryID, bdsubcategory.subcategoryName, bdcaption.captionName, bdcaption.captionID, bdcaption.Duration, bddirectory.firstRunDate, bddirectory.startTime, REPLACE(bddirectory.filePath,'//172.168.100.241','" + process.env.VIDEO_URL + "') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, Date(bddirectory.firstRunDate) AS transmissionDate, bddirectory.duration AS videoDuration, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID WHERE DATE(bddirectory.firstRunDate) = '" + commericals_date + "' AND bdsubcategory.subcategoryID IN (" + Subcategories + ") ", { type: db.sequelize.QueryTypes.SELECT });
     const filledCategories = result.map(category => {
       return {
         brandName: category.brandName || defaultValues.brandName,
@@ -485,7 +400,7 @@ exports.messages = async (req, res) => {
   const key = process.env.SECRET_CODE;
   let person_id = parseInt(token) - parseInt(key);
   try {
-    const result = await db.sequelize.query("SELECT mgs.sender_name, mgs.sender_number,bdc.captionName, brand.brandName, bdc.Duration, bddirectory.startTime, rechannel.channelName,bdsubcategory.subcategoryName, CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', 'http://103.249.154.245:8484'), REPLACE(bddirectory.fileName, '.flv', '.jpg')) AS pictureURL, CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', 'http://103.249.154.245:8484'),REPLACE(bddirectory.fileName, '.flv', '.mp4')) AS fileUrl , DATE(bddirectory.firstRunDate) as insertDate FROM phonebook.mgsharinginternal as mgs  INNER JOIN phonebook.newsms_person as np ON mgs.receiver_number = np.personNumber INNER JOIN pktvmedia.bdcaption as bdc ON bdc.captionID = mgs.captionID INNER JOIN pktvmedia.bddirectory ON bdc.captionID = bddirectory.captionID INNER JOIN pktvmedia.rechannel ON bddirectory.channelID = rechannel.channelID INNER JOIN pktvmedia.bdbrand as brand ON brand.brandID = bdc.brandID INNER JOIN pktvmedia.bdsubcategory ON brand.subcategoryID = bdsubcategory.subcategoryID WHERE np.personID = " + person_id + " ORDER BY mgs.insertdate DESC LIMIT 25", { type: db.sequelize.QueryTypes.SELECT });
+    const result = await db.sequelize.query("SELECT mgs.sender_name, mgs.sender_number,bdc.captionName, brand.brandName, bdc.Duration, bddirectory.startTime, rechannel.channelName,bdsubcategory.subcategoryName, CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', '" + process.env.VIDEO_URL + "'), REPLACE(bddirectory.fileName, '.flv', '.jpg')) AS pictureURL, CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', '" + process.env.VIDEO_URL + "'),REPLACE(bddirectory.fileName, '.flv', '.mp4')) AS fileUrl , DATE(bddirectory.firstRunDate) as insertDate FROM phonebook.mgsharinginternal as mgs  INNER JOIN phonebook.newsms_person as np ON mgs.receiver_number = np.personNumber INNER JOIN pktvmedia.bdcaption as bdc ON bdc.captionID = mgs.captionID INNER JOIN pktvmedia.bddirectory ON bdc.captionID = bddirectory.captionID INNER JOIN pktvmedia.rechannel ON bddirectory.channelID = rechannel.channelID INNER JOIN pktvmedia.bdbrand as brand ON brand.brandID = bdc.brandID INNER JOIN pktvmedia.bdsubcategory ON brand.subcategoryID = bdsubcategory.subcategoryID WHERE np.personID = " + person_id + " ORDER BY mgs.insertdate DESC LIMIT 25", { type: db.sequelize.QueryTypes.SELECT });
     return res.status(200).send(result);
   } catch (error) {
     return res.status(200).send({ message: "No messages found" });
@@ -503,10 +418,7 @@ exports.notification = async (req, res) => {
     try {
       let obj = {};
       let data = item.message.split('\r\n');
-      if(item.CaptionID)
-      {
-        obj.captionID = item.CaptionID;
-      }
+      obj.captionID = item.CaptionID || 0;
       obj.brand = data[2].replace("Brd:", '').replace("Brand:", '').trim();
       obj.caption = data[3].replace("Cap:", '').replace("Caption:").trim();
       obj.channel = data[4].replace("Ch:", '').replace("Channel:").trim();
@@ -523,34 +435,107 @@ exports.notification = async (req, res) => {
 exports.getAdByDateBrandDuration = async (req, res) => {
   const token = req.body.token;
   const brand = req.body.brand;
+  const captionID = req.body.captionID;
   let date = req.body.date;
-  if (!token || !brand || !date)
-    return res.status(400).send({ message: "Missing fields" });
-  if (!isValidDateFormat(date)) {
-    date = convertToValidDateFormat(date);
-    if (!date) {
-      return res.status(400).send({ message: "Invalid date format. Should be (YYYY-MM-DD)" });
+  if (captionID && captionID != 0) {
+    const key = process.env.SECRET_CODE;
+    let person_id = parseInt(token) - parseInt(key);
+    const isSuperUser = await db.sequelize.query("SELECT isActive FROM phonebook.newsms_subscription WHERE subcategoryID IN (0,841) AND personID = " + person_id, { type: db.sequelize.QueryTypes.SELECT });
+    if (isSuperUser.length > 0 && isSuperUser[0].isActive == 1) {
+      categories = await db.sequelize.query(
+        `
+        SELECT DISTINCT bdbrand.brandName, bdcategory.categoryName, bdcategory.categoryID, bdsubcategory.subcategoryName, bdcaption.captionName, bdcaption.captionID, bdcaption.Duration, bddirectory.firstRunDate as insertDate, bddirectory.startTime, 
+        REPLACE(bddirectory.filePath,'//172.168.100.241','` + process.env.VIDEO_URL + `') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName,CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', '` + process.env.VIDEO_URL + `'), REPLACE(bddirectory.fileName, '.flv', '.mp4')) AS videoURL,
+        CONCAT(REPLACE(bddirectory.filePath, '//172.168.100.241', '` + process.env.VIDEO_URL + `'), REPLACE(bddirectory.fileName, '.flv', '.jpg')) AS pictureURL,
+        Date(bddirectory.firstRunDate) AS transmissionDate,
+        bddirectory.duration AS videoDuration,
+        rechannel.channelName,
+        bdcommercialtype.commercialTypeName  
+        FROM bddirectory
+        INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID
+        INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID
+        INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID
+        INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID
+        INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID
+        INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID
+        WHERE bdcaption.captionID = '`+ captionID + `'
+        AND YEAR(bddirectory.firstRunDate) >= ` + process.env.START_YEAR + `
+        AND bdcommercialtype.commercialTypeName = "Spot/TVC"
+        AND bddirectory.isActive = 1
+        ORDER BY bddirectory.firstRunDate ASC`,
+        { type: db.sequelize.QueryTypes.SELECT }
+      );
+      const filledCategories = categories.map(category => {
+        return {
+          brandName: category.brandName || defaultValues.brandName,
+          categoryName: category.categoryName || defaultValues.categoryName,
+          categoryID: category.categoryID || defaultValues.categoryID,
+          subcategoryName: category.subcategoryName || defaultValues.subcategoryName,
+          captionName: category.captionName || defaultValues.captionName,
+          captionID: category.captionID || defaultValues.captionID,
+          Duration: category.Duration || defaultValues.Duration,
+          insertDate: category.insertDate || defaultValues.insertDate,
+          startTime: category.startTime || defaultValues.startTime,
+          filePath: category.filePath || defaultValues.filePath,
+          fileName: category.fileName || defaultValues.fileName,
+          videoURL: category.videoURL || defaultValues.videoURL,
+          pictureURL: category.pictureURL || defaultValues.pictureURL,
+          transmissionDate: category.transmissionDate || defaultValues.transmissionDate,
+          videoDuration: category.videoDuration || defaultValues.videoDuration,
+          channelName: category.channelName || defaultValues.channelName,
+          commercialTypeName: category.commercialTypeName || defaultValues.commercialTypeName,
+        };
+      });
+      return res.status(200).send(filledCategories);
     }
-  }
-  if (req.body.duration && !req.body.duration.toString().match(/[a-z]/i)) {
-    const duration = req.body.duration.toString();
-    const result = await db.sequelize.query(`SELECT bddirectory.firstRunDate as insertDate, bddirectory.captionID, bddirectory.startTime, bddirectory.duration, REPLACE(bddirectory.filePath,'//172.168.100.241','http://103.249.154.245:8484') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, bdcaption.captionName, bdbrand.brandName, bdsubcategory.subcategoryName, bdcategory.categoryName, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID WHERE bdbrand.brandName = '` + brand + `' AND (bddirectory.firstRunDate >= DATE_SUB('` + date + `', INTERVAL 2 DAY)) AND bddirectory.duration = '` + duration + `' AND bdcommercialtype.commercialTypeName = 'Spot/TVC' AND bddirectory.isActive = 1`, { type: db.sequelize.QueryTypes.SELECT });
-    if(result.length == 0){
-      return res.status(200).send(notification_404);
+    else {
+      let subscribedSubcategories = await db.sequelize.query('SELECT subcategoryID FROM phonebook.newsms_subscription WHERE newsms_subscription.personID = ' + person_id, { type: db.sequelize.QueryTypes.SELECT });
+      const subcategoryIDs = subscribedSubcategories.map(item => item.subcategoryID);
+      const Subcategories = subcategoryIDs.join(',');
+      const result = await db.sequelize.query("SELECT bdbrand.brandName, bdcategory.categoryName, bdcategory.categoryID, bdsubcategory.subcategoryID, bdsubcategory.subcategoryName, bdcaption.captionName, bdcaption.captionID, bdcaption.Duration, bddirectory.firstRunDate, bddirectory.startTime, REPLACE(bddirectory.filePath,'//172.168.100.241','" + process.env.VIDEO_URL + "') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, Date(bddirectory.firstRunDate) AS transmissionDate, bddirectory.duration AS videoDuration, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID WHERE WHERE bdcaption.captionID = '" + captionID + "' AND bdsubcategory.subcategoryID IN (" + Subcategories + ") ", { type: db.sequelize.QueryTypes.SELECT });
+      const filledCategories = result.map(category => {
+        return {
+          brandName: category.brandName || defaultValues.brandName,
+          categoryName: category.categoryName || defaultValues.categoryName,
+          categoryID: category.categoryID || defaultValues.categoryID,
+          subcategoryName: category.subcategoryName || defaultValues.subcategoryName,
+          captionName: category.captionName || defaultValues.captionName,
+          captionID: category.captionID || defaultValues.captionID,
+          Duration: category.Duration || defaultValues.Duration,
+          insertDate: category.insertDate || defaultValues.insertDate,
+          startTime: category.startTime || defaultValues.startTime,
+          filePath: category.filePath || defaultValues.filePath,
+          fileName: category.fileName || defaultValues.fileName,
+          videoURL: category.videoURL || defaultValues.videoURL,
+          pictureURL: category.pictureURL || defaultValues.pictureURL,
+          transmissionDate: category.transmissionDate || defaultValues.transmissionDate,
+          videoDuration: category.videoDuration || defaultValues.videoDuration,
+          channelName: category.channelName || defaultValues.channelName,
+          commercialTypeName: category.commercialTypeName || defaultValues.commercialTypeName,
+        };
+      });
+      return res.status(200).send(filledCategories);
     }
-    return res.status(200).send(result);
   }
   else {
-    let result = await db.sequelize.query(`SELECT bddirectory.firstRunDate as insertDate, bddirectory.captionID, bddirectory.startTime, bddirectory.duration, REPLACE(bddirectory.filePath,'//172.168.100.241','http://103.249.154.245:8484') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, bdcaption.captionName, bdbrand.brandName, bdsubcategory.subcategoryName, bdcategory.categoryName, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID WHERE bdbrand.brandName = '` + brand + `' AND DATE(bddirectory.firstRunDate) = DATE('` + date + `') AND bdcommercialtype.commercialTypeName = 'Spot/TVC' AND bddirectory.isActive = 1`, { type: db.sequelize.QueryTypes.SELECT });
-    if (result.length == 0) {
-      result = await db.sequelize.query(`SELECT bddirectory.firstRunDate as insertDate, bddirectory.captionID, bddirectory.startTime, bddirectory.duration, REPLACE(bddirectory.filePath,'//172.168.100.241','http://103.249.154.245:8484') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, bdcaption.captionName, bdbrand.brandName, bdsubcategory.subcategoryName, bdcategory.categoryName, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID WHERE bdbrand.brandName = '` + brand + `' AND ((bddirectory.firstRunDate = DATE_SUB('` + date + `', INTERVAL 1 DAY)) OR (bdcaption.editDate = DATE_SUB('` + date + `', INTERVAL 1 DAY))) AND bdcommercialtype.commercialTypeName = 'Spot/TVC' AND bddirectory.isActive = 1`, { type: db.sequelize.QueryTypes.SELECT });
+    if (!token || !brand || !date)
+      return res.status(400).send({ message: "Missing fields" });
+    if (!isValidDateFormat(date)) {
+      date = convertToValidDateFormat(date);
+      if (!date) {
+        return res.status(400).send({ message: "Invalid date format. Should be (YYYY-MM-DD)" });
+      }
     }
-    if(result.length == 0){
-      return res.status(200).send(notification_404);
+      let result = await db.sequelize.query(`SELECT bddirectory.firstRunDate as insertDate, bddirectory.captionID, bddirectory.startTime, bddirectory.duration, REPLACE(bddirectory.filePath,'//172.168.100.241','` + process.env.VIDEO_URL + `') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, bdcaption.captionName, bdbrand.brandName, bdsubcategory.subcategoryName, bdcategory.categoryName, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID WHERE bdbrand.brandName = '` + brand + `' AND DATE(bddirectory.firstRunDate) = DATE('` + date + `') AND bdcommercialtype.commercialTypeName = 'Spot/TVC' AND bddirectory.isActive = 1`, { type: db.sequelize.QueryTypes.SELECT });
+      if (result.length == 0) {
+        result = await db.sequelize.query(`SELECT bddirectory.firstRunDate as insertDate, bddirectory.captionID, bddirectory.startTime, bddirectory.duration, REPLACE(bddirectory.filePath,'//172.168.100.241','` + process.env.VIDEO_URL + `') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, bdcaption.captionName, bdbrand.brandName, bdsubcategory.subcategoryName, bdcategory.categoryName, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID WHERE bdbrand.brandName = '` + brand + `' AND ((bddirectory.firstRunDate = DATE_SUB('` + date + `', INTERVAL 1 DAY)) OR (bdcaption.editDate = DATE_SUB('` + date + `', INTERVAL 1 DAY))) AND bdcommercialtype.commercialTypeName = 'Spot/TVC' AND bddirectory.isActive = 1`, { type: db.sequelize.QueryTypes.SELECT });
+      }
+      if (result.length == 0) {
+        return res.status(200).send(notification_404);
+      }
+      return res.status(200).send(result);
     }
-    return res.status(200).send(result);
-  }
-}
+};
 exports.getProfile = async (req, res) => {
   const token = req.body.token;
   if (!token)
