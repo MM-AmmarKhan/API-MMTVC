@@ -531,6 +531,9 @@ exports.getAdByDateBrandDuration = async (req, res) => {
         result = await db.sequelize.query(`SELECT bddirectory.firstRunDate as insertDate, bddirectory.captionID, bddirectory.startTime, bddirectory.duration, REPLACE(bddirectory.filePath,'//172.168.100.241','` + process.env.VIDEO_URL + `') AS filePath, REPLACE(bddirectory.fileName,'.flv','.mp4') AS fileName, bdcaption.captionName, bdbrand.brandName, bdsubcategory.subcategoryName, bdcategory.categoryName, rechannel.channelName, bdcommercialtype.commercialTypeName FROM bddirectory INNER JOIN bdcaption ON bdcaption.captionID = bddirectory.captionID INNER JOIN bdcommercialtype ON bdcaption.commercialTypeID = bdcommercialtype.commercialTypeID INNER JOIN bdbrand ON bdbrand.brandID = bdcaption.brandID INNER JOIN bdsubcategory ON bdbrand.subcategoryID = bdsubcategory.subcategoryID INNER JOIN bdcategory ON bdsubcategory.categoryID = bdcategory.categoryID INNER JOIN rechannel ON rechannel.channelID = bddirectory.channelID WHERE bdbrand.brandName = '` + brand + `' AND ((bddirectory.firstRunDate = DATE_SUB('` + date + `', INTERVAL 1 DAY)) OR (bdcaption.editDate = DATE_SUB('` + date + `', INTERVAL 1 DAY))) AND bdcommercialtype.commercialTypeName = 'Spot/TVC' AND bddirectory.isActive = 1`, { type: db.sequelize.QueryTypes.SELECT });
       }
       if (result.length == 0) {
+        notification_404[0].brandName = brand;
+        notification_404[0].insertDate = date;
+        notification_404[0].duration = req.body.duration ? req.body.duration : 1;
         return res.status(200).send(notification_404);
       }
       return res.status(200).send(result);
