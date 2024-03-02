@@ -419,11 +419,11 @@ exports.notification = async (req, res) => {
       let obj = {};
       let data = item.message.split('\r\n');
       obj.captionID = item.CaptionID || 0;
-      obj.brand = data[2].replace("Brd:", '').replace("Brand:", '').trim();
-      obj.caption = data[3].replace("Cap:", '').replace("Caption:").trim();
-      obj.channel = data[4].replace("Ch:", '').replace("Channel:").trim();
-      obj.duration = data[5].replace("Dur:", '').replace("Duration:").trim();
-      obj.date = data[6].replace("DT:", '').replace("Transmission Date:").trim();
+      obj.brand = data[2].replace("Brand:", '').trim();
+      obj.caption = data[3].replace("Caption:", '').trim();
+      obj.channel = data[4].replace("Channel:",'').trim();
+      obj.duration = data[5].replace("Dur:", '').replace("Duration:",'').trim();
+      obj.date = data[6].replace("DT:", '').replace("Transmission Date:",'').trim();
       response.push(obj);
     }
     catch (err) {
