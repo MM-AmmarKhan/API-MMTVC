@@ -424,7 +424,9 @@ exports.notification = async (req, res) => {
       obj.channel = data[4].replace("Channel:",'').trim();
       obj.duration = data[5].replace("Dur:", '').replace("Duration:",'').trim();
       obj.date = data[6].replace("DT:", '').replace("Transmission Date:",'').trim();
-      response.push(obj);
+      if (!process.env.NOTIFICATION_OFF_CHANNELS.includes(obj.channel)) {
+        response.push(obj);
+      }      
     }
     catch (err) {
       console.log(err);
