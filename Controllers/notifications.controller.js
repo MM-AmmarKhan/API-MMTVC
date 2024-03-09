@@ -3,7 +3,6 @@ const axios = require('axios');
 exports.tvcalert = async (req, res) => {
   const { jobid, fcm_id, message } = req.body;  
   if (!jobid || !fcm_id) return res.status(400).send({ message: "Missing jobid or FCM_ID" });
-  
   const headers = {
     'Authorization': 'key=AIzaSyAMJ8jCgs_YVP30M1Kods2Y44DO_iFntFQ',
     'Content-Type': 'application/json',
@@ -28,7 +27,7 @@ exports.tvcalert = async (req, res) => {
       if(response.data.failure > 0) {
         return res.status(500).send('MMTVC API Error:',response.data);
       }
-      const result = await db.sequelize.query(`UPDATE phonebook.sms_jobs SET delivered = 1 WHERE jobsID = ` + jobid, { type: db.sequelize.QueryTypes.UPDATE });
+      const result = await db.sequelize.query(`UPDATE phonebook.sms_jobs SET delivered = 1, deliverTime = NOW() WHERE jobsID = ` + jobid, { type: db.sequelize.QueryTypes.UPDATE });
       return res.status(200).send('Delivered');
     }
     else{
@@ -42,7 +41,7 @@ exports.tvcalert = async (req, res) => {
       if(response.data.failure > 0) {
         return res.status(500).send('MMTVC API Error:',response.data);
       }
-      const result = await db.sequelize.query(`UPDATE phonebook.sms_jobs SET delivered = 1 WHERE jobsID = ` + jobid, { type: db.sequelize.QueryTypes.UPDATE });
+      const result = await db.sequelize.query(`UPDATE phonebook.sms_jobs SET delivered = 1, deliverTime = NOW() WHERE jobsID = ` + jobid, { type: db.sequelize.QueryTypes.UPDATE });
       return res.status(200).send('Delivered');
     }
    
