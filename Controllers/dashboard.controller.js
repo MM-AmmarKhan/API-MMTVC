@@ -414,21 +414,24 @@ exports.notification = async (req, res) => {
   let person_id = parseInt(token) - parseInt(key);
   const result = await db.sequelize.query(`SELECT sms_jobs.message, CaptionID FROM phonebook.sms_jobs INNER JOIN phonebook.newsms_person ON newsms_person.personNumber = phonebook.sms_jobs.telNo WHERE newsms_person.personID = ` + person_id + ` ORDER BY sms_jobs.insertDate DESC LIMIT ` + process.env.NOTIFICATION_LIMIT, { type: db.sequelize.QueryTypes.SELECT });
   let response = [];
+  let uniqueCaptions = new Set();
   result.forEach(item => {
     try {
       let obj = {};
       let data = item.message.split('\r\n');
       obj.captionID = item.CaptionID || 0;
       obj.brand = data[2].replace("Brand:", '').trim();
-      obj.caption = data[3].replace("Caption:", '').trim();
-      obj.channel = data[4].replace("Channel:",'').trim();
-      obj.duration = data[5].replace("Dur:", '').replace("Duration:",'').trim();
-      obj.date = data[6].replace("DT:", '').replace("Transmission Date:",'').trim();
+      obj.channel = data[4].replace("Channel:", '').trim();
+      obj.caption = "[" + obj.channel + "] " + data[3].replace("Caption:", '').trim();
+      obj.duration = data[5].replace("Dur:", '').replace("Duration:", '').trim();
+      obj.date = data[6].replace("DT:", '').replace("Transmission Date:", '').trim();
       if (!process.env.NOTIFICATION_OFF_CHANNELS.includes(obj.channel)) {
-        response.push(obj);
-      }      
-    }
-    catch (err) {
+        if (!uniqueCaptions.has(obj.caption)) {
+          response.push(obj);
+          uniqueCaptions.add(obj.caption);
+        }
+      }
+    } catch (err) {
       console.log(err);
     }
   })
@@ -439,6 +442,7 @@ exports.getAdByDateBrandDuration = async (req, res) => {
   const brand = req.body.brand;
   const captionID = req.body.captionID;
   let date = req.body.date;
+  console.log("getAdByDateBrandDuration body", req.body)
   if (captionID && captionID != 0) {
     const key = process.env.SECRET_CODE;
     let person_id = parseInt(token) - parseInt(key);
